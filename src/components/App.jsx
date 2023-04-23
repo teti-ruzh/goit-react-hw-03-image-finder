@@ -35,11 +35,11 @@ export class App extends Component {
           ? this.setState({ status: 'resolved' })
           : this.setState({
               status: 'rejected',
-              error: `No images for query ${searchQuery}`,
+              error: `Sorry, there is no images for ${searchQuery}`,
             });
       })
       .catch(error => {
-        this.setState({ status: 'rejected', error: `${error.message}` });
+        this.setState({ status: 'rejected', error: `${error}` });
       });
   }
 
@@ -93,15 +93,14 @@ export class App extends Component {
 
 
   render() {
-    const { images, showModal, status, page, total, loading,
-      urlModal} = this.state;
-    const { nextQuery } = this.props;
+    const { images, showModal, status, error, page, total, loading, urlModal} = this.state;
+    console.log(error);
     return (
       <div className={css.container}>
         <ToastContainer autoClose={2000} />
         <Searchbar onSubmit={this.handleFormSubmit} />
 
-        {status === 'rejected' && <p>No images for query ${nextQuery} </p>}
+        {status === 'rejected' && <h2 className={css.errorMsg}>{error}</h2>}
         {status === 'resolved' && (
           <>
             <ImageGallery images={images}

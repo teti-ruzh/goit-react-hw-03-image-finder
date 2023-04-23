@@ -29,3 +29,11 @@ img {
   margin-right: auto;
   padding: 20px;
 }
+
+.errorMsg {
+  display: flex;
+  justify-content: center;
+  margin-top: 100px;
+  text-align: center;
+  color: rgb(71, 27, 193);
+}
