@@ -14,52 +14,48 @@ export class App extends Component {
     searchQuery: '',
     images: [],
     page: 1,
-    total: null,
     showModal: false,
     urlModal: '',
-    loading: false,
+    isLoading: false,
     error: '',
-    status: 'idle',
+    showLoadMore: false,
+    isEmpty: false,
   };
 
   handleGetImages(searchQuery, page) {
+    this.setState({ isLoading: true });
     api
       .getImg(searchQuery, page)
-      .then(({hits, totalHits})=> {
+      .then(({ hits, totalHits }) => {
+        if (!hits.length) {
+          this.setState({
+            isEmpty: true,
+          });
+          return;
+        }
         this.setState({
           images: [...this.state.images, ...hits],
-          total: totalHits / 12 > 500 ? 500 : totalHits / 12,
+          showLoadMore: this.state.page < Math.ceil(totalHits / 12),
         });
-
-        hits[0]
-          ? this.setState({ status: 'resolved' })
-          : this.setState({
-              status: 'rejected',
-              error: `Sorry, there is no images for ${searchQuery}`,
-            });
       })
       .catch(error => {
-        this.setState({ status: 'rejected', error: `${error}` });
-      });
+        this.setState({ error: `${error}` });
+      })
+      .finally(() => this.setState({ isLoading: false }));
   }
 
   componentDidUpdate(prevProps, prevState) {
+    const prevQuery = prevState.searchQuery;
     const newQuery = this.state.searchQuery;
+    const prevPage = prevState.page;
     const newPage = this.state.page;
 
-    if (this.state.status === 'loading') {
-      this.setState({ error: '', status: 'pending' });
-      this.handleGetImages(newQuery, newPage);
-    }
-
-    if (this.state.status !== 'loading' && prevState.page !== newPage) {
-      this.setState({ error: '' });
+    if (prevQuery !== newQuery || prevPage !== newPage) {
       this.handleGetImages(newQuery, newPage);
     }
   }
 
-  
-  openModal = (url) => {
+  openModal = url => {
     this.setState(({ showModal }) => ({
       showModal: !showModal,
       urlModal: url,
@@ -69,58 +65,72 @@ export class App extends Component {
   closeModal = () => {
     this.setState(({ showModal }) => ({
       showModal: !showModal,
-      urlModal: "",
+      urlModal: '',
     }));
   };
 
   toggleOnLoading = () => {
-    this.setState(({ loading }) => ({ loading: !loading }));
+    this.setState(({ isLoading }) => ({ isLoading: !isLoading }));
   };
-  
-  handleFormSubmit = (query) => {
+
+  handleFormSubmit = query => {
     this.setState({
       searchQuery: query,
       images: [],
       page: 1,
-      total: "null",
+      showLoadMore: false,
       status: 'loading',
+      isEmpty: false,
+      error: '',
     });
   };
 
-  handleIncrement = () => {
-    this.setState({ page: this.state.page + 1 });
+  onLoadMore = () => {
+    this.setState(({ page }) => ({ page: page + 1 }));
   };
 
-
   render() {
-    const { images, showModal, status, error, page, total, loading, urlModal} = this.state;
-    console.log(error);
+    const {
+      searchQuery,
+      images,
+      showModal,
+      error,
+      isLoading,
+      urlModal,
+      showLoadMore,
+      isEmpty,
+    } = this.state;
+
     return (
       <div className={css.container}>
         <ToastContainer autoClose={2000} />
         <Searchbar onSubmit={this.handleFormSubmit} />
 
-        {status === 'rejected' && <h2 className={css.errorMsg}>{error}</h2>}
-        {status === 'resolved' && (
-          <>
-            <ImageGallery images={images}
-              openModal={this.openModal}
-              toggleOnLoading={this.toggleOnLoading}
-            />
-            {page < total && <Button handleIncrement={this.handleIncrement} />}
-          </>)
-        }
-        {status === 'pending' && <Loader />}
-             
-        {showModal && (<Modal onClose={this.closeModal}>
-            {loading && <Loader />}
+        {isEmpty && (
+          <h2 className={css.errorMsg}>
+            Sorry, there is no images for {searchQuery}
+          </h2>
+        )}
+        {error && <h2 className={css.errorMsg}>{error}</h2>}
+        <ImageGallery
+          images={images}
+          openModal={this.openModal}
+          toggleOnLoading={this.toggleOnLoading}
+        />
+        {showLoadMore && <Button onLoadMore={this.onLoadMore} />}
+        {isLoading && <Loader />}
+
+        {showModal && (
+          <Modal onClose={this.closeModal}>
+            {isLoading && <Loader />}
             <img
               onLoad={this.toggleOnLoading}
               src={urlModal}
               alt=""
               className={css.modalImg}
             />
-          </Modal>)}
+          </Modal>
+        )}
       </div>
     );
   }
