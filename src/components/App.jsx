@@ -122,7 +122,7 @@ export class App extends Component {
 
         {showModal && (
           <Modal onClose={this.closeModal}>
-            {isLoading && <Loader />}
+            {/* {isLoading && <Loader />} */}
             <img
               onLoad={this.toggleOnLoading}
               src={urlModal}
